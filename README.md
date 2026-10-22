@@ -104,6 +104,63 @@ python3 -m venv .venv
 
 The endpoint returns `{"status":"ok"}` when the service is running.
 
+## Deploying the backend to Render
+
+Create a Render Web Service from this repository. Use the repository root as
+the service root and configure these exact commands:
+
+```sh
+# Build command
+python3 -m pip install -r backend/requirements.txt && python3 backend/manage.py collectstatic --noinput
+
+# Start command
+gunicorn --chdir backend config.wsgi:application --bind 0.0.0.0:$PORT
+```
+
+Run migrations with this command before the first production start and after
+each schema change:
+
+```sh
+python backend/manage.py migrate --noinput
+```
+
+Render supports a separate pre-deploy command for this migration step on
+eligible plans. If that option is unavailable, run the same command once from
+an approved deployment shell before starting the service; do not run
+migrations against a local database by accident.
+
+Set these environment variables in the Render service. Do not copy local
+secrets into the repository:
+
+```text
+DJANGO_DEBUG=false
+DJANGO_SECRET_KEY=<long-random-production-secret>
+DJANGO_ALLOWED_HOSTS=<your-render-backend-host>
+DB_ENGINE=postgresql
+DB_NAME=<render-postgres-database-name>
+DB_USER=<render-postgres-user>
+DB_PASSWORD=<render-postgres-password>
+DB_HOST=<render-postgres-host>
+DB_PORT=<render-postgres-port>
+DB_SSLMODE=verify-full
+DJANGO_SECURE_PROXY_SSL_HEADER=true
+CORS_ALLOWED_ORIGINS=https://<your-frontend-domain>
+CSRF_TRUSTED_ORIGINS=https://<your-frontend-domain>
+CONTACT_SUBMISSION_RATE=5/hour
+```
+
+`DJANGO_ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, and `CSRF_TRUSTED_ORIGINS`
+must contain exact production values; do not use `*`. `DB_SSLMODE=verify-full`
+preserves TLS verification for PostgreSQL. The proxy SSL setting is enabled
+only because Render terminates HTTPS and forwards the request scheme through a
+trusted reverse proxy; keep it disabled for local development.
+
+The build command runs `collectstatic` into `backend/staticfiles`, and
+WhiteNoise serves those files from the WSGI process. Confirm that
+`https://<your-backend-host>/health/` returns `{"status":"ok"}` after
+deployment. Configure the frontend's `VITE_API_BASE_URL` to the deployed API
+base URL if the frontend and backend use different origins.
+
 ## Projects API
 
 The public Projects API is read-only and returns JSON. List endpoints use page
@@ -468,13 +525,11 @@ therefore requires a trusted server certificate and a database DNS hostname
 that matches it; set `DB_SSLROOTCERT` to the provider CA file unless it is
 installed in libpq’s default root-certificate location. Never place database
 credentials in `frontend/.env` or `VITE_*` values.
-`STATIC_ROOT=backend/staticfiles` is configured for `collectstatic`; run it
-during release and serve collected files through the host’s static server or
-CDN. Django Admin is available at `/admin/` and needs
-its static assets served. The repository has no production WSGI/ASGI server,
-static-serving adapter, or deployment configuration yet; select and configure
-these for the hosting platform. Do not use Django `runserver` or `vite preview`
-as production servers.
+`STATIC_ROOT=backend/staticfiles` is configured for `collectstatic`; the Render
+build command runs it and WhiteNoise serves the collected files, including
+Django Admin assets. Django Admin is available at `/admin/`. The Render
+service uses Gunicorn as documented above; do not use Django `runserver` or
+`vite preview` as production servers.
 
 The contact API limits request bodies to 16 KiB when a `Content-Length` header
 is present and returns a generic 503 on database storage failure. Set an
