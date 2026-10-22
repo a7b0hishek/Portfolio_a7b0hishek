@@ -1,0 +1,30 @@
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+backend/.venv/
+
+# Local databases
+*.sqlite3
+*.db
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+!frontend/.env.example
+
+# Frontend dependencies and build output
+frontend/node_modules/
+frontend/dist/
+
+# Test and tool caches
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
