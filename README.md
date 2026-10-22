@@ -114,20 +114,24 @@ the service root and configure these exact commands:
 python3 -m pip install -r backend/requirements.txt && python3 backend/manage.py collectstatic --noinput
 
 # Start command
-gunicorn --chdir backend config.wsgi:application --bind 0.0.0.0:$PORT
+sh backend/start.sh
 ```
 
-Run migrations with this command before the first production start and after
-each schema change:
+The start command runs Django migrations idempotently before Gunicorn starts.
+If the database connection or migration fails, the script exits and Gunicorn
+does not accept requests. Run migrations with this command manually only when
+you intentionally want to verify the deployment database:
 
 ```sh
-python backend/manage.py migrate --noinput
+python3 backend/manage.py migrate --noinput
 ```
 
-Render supports a separate pre-deploy command for this migration step on
-eligible plans. If that option is unavailable, run the same command once from
-an approved deployment shell before starting the service; do not run
-migrations against a local database by accident.
+This startup migration is the fallback for Render plans without a Pre-Deploy
+Command or Shell. It does not import sample projects, create contact messages,
+reset data, or delete records. Django records applied migrations in its
+`django_migrations` table, so repeated starts safely skip migrations already
+applied. Avoid running multiple deploys concurrently while a schema migration
+is in progress.
 
 Set these environment variables in the Render service. Do not copy local
 secrets into the repository:
@@ -528,8 +532,8 @@ credentials in `frontend/.env` or `VITE_*` values.
 `STATIC_ROOT=backend/staticfiles` is configured for `collectstatic`; the Render
 build command runs it and WhiteNoise serves the collected files, including
 Django Admin assets. Django Admin is available at `/admin/`. The Render
-service uses Gunicorn as documented above; do not use Django `runserver` or
-`vite preview` as production servers.
+service uses Gunicorn through `backend/start.sh` as documented above; do not
+use Django `runserver` or `vite preview` as production servers.
 
 The contact API limits request bodies to 16 KiB when a `Content-Length` header
 is present and returns a generic 503 on database storage failure. Set an
