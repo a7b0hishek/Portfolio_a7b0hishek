@@ -15,10 +15,16 @@ describe('ProjectsPage', () => {
     expect(screen.getByRole('link', { name: /Movie-X/ })).toHaveAttribute('href', '/projects/movie-x');
   });
 
-  it('shows only supplied source links and no live deployment links', () => {
+  it('shows supplied source and live deployment links', () => {
     render(<MemoryRouter><ProjectsPage /></MemoryRouter>);
 
-    expect(screen.getAllByRole('link', { name: /GitHub/ })).toHaveLength(2);
-    expect(screen.queryByRole('link', { name: /live demo/i })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /GitHub/ })).toHaveLength(7);
+    const liveDemoLinks = screen.getAllByRole('link', { name: /live demo/i });
+    expect(liveDemoLinks).toHaveLength(6);
+    const liveDemoLink = liveDemoLinks.find((link) => link.getAttribute('href') === 'https://ai-task-manager-3bd5.onrender.com/');
+    expect(liveDemoLink).toBeDefined();
+    expect(liveDemoLink).toHaveAttribute('href', 'https://ai-task-manager-3bd5.onrender.com/');
+    expect(liveDemoLink).toHaveAttribute('target', '_blank');
+    expect(liveDemoLink).toHaveAttribute('rel', 'noopener noreferrer');
   });
 });

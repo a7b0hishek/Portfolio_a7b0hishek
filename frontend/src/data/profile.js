@@ -19,6 +19,7 @@ export const skillGroups = [
   { label: 'Developer tools', items: ['Git', 'GitHub', 'VS Code', 'npm'] },
   { label: 'Deployment', items: ['Render', 'Basic cloud deployment', 'Environment variables'] },
   { label: 'Core concepts', items: ['OOP', 'DBMS', 'Operating systems', 'SDLC', 'STLC', 'Data structures & algorithms'] },
+  { label: 'AI', items: ['Claude', 'GPT', 'Groq', 'AI Agents-RAG', 'LLM'] },
 ];
 
 export const experience = [

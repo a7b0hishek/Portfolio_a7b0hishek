@@ -12,7 +12,7 @@ describe('ProjectDetailPage', () => {
     renderDetail('/projects/ai-powered-task-management-rest-api');
 
     expect(screen.getByRole('heading', { name: /AI-Powered Task Management REST API/ })).toBeInTheDocument();
-    expect(screen.getByText(/Django REST Framework API backed by PostgreSQL/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/authenticated workflows, role-based access, and an LLM assistant/i)).toHaveLength(2);
     expect(screen.getByText('Django REST Framework')).toBeInTheDocument();
   });
 
